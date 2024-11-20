@@ -2,50 +2,66 @@
 
 pkgname=wepush
 pkgdesc="专注批量推送的小而美的工具"
-pkgver=4.5.0
+pkgver=5.0.5
 pkgrel=1
-arch=('x86_64' 'i686')
+arch=('any')
 url="https://rememberber.github.io/WePush/"
 license=('MIT')
 depends=("java-runtime")
-makedepends=('maven' 'imagemagick')
+makedepends=('patch' 'maven' 'java-environment=21')
 
 _appname="WePush"
 _distasset="wepush-${pkgver}.tar.gz"
-source=("${_distasset}::https://github.com/rememberber/WePush/releases/download/v${pkgver}/${_appname}-${pkgver}-linux.tar.gz")
-sha256sums=('3a3817901953c758f372dfb38d339ed9da409134a74ac24a0cb56d5090ed31f5')
+source=("${_distasset}::https://github.com/rememberber/WePush/archive/refs/tags/v${pkgver}.tar.gz"
+        "0001-fix-maven-compiler-with-lombok.patch")
+sha256sums=('ca8b351cc8967c666098c8a9a12c26efac6c23a6ccdcd2ba90b8eb4106faf70d'
+            '27b8a432559ca575f183ecf1b9c2c21a79bb11e156d49f609086c219e1b43b28')
 
 prepare() {
-    gendesk -f -n \
-        --pkgname="${pkgname}" \
-        --pkgdesc="${pkgdesc}" \
-        --name="${_appname}" \
-        --genericname="${_appname}" \
-        --comment="${_appname}" \
-        --startupnotify=true \
-        --categories="Network;Office;Utility"
+    cd "${srcdir}/${_appname}-${pkgver}"
+    for patch in "$srcdir"/*.patch; do
+        patch -p1 < "$patch"
+    done
 }
 
-build() {
-    cd "${srcdir}/${_appname}" || return
 
-    sed -i "s|JAVA=.*|JAVA=$(which java)|" ${_appname}
+build() {
+    (
+        cd "${srcdir}/${_appname}-${pkgver}"
+        mvn clean
+        mvn package -Dmaven.test.skip=true
+    )
 }
 
 
 package() {
-    mkdir -p "${pkgdir}/usr/share"
+    _srcdir="${srcdir}/${_appname}-${pkgver}"
+    _distdir="${_srcdir}/target/WePush/WePush.app/Contents/Resources/Java"
 
-    install -Dm755 -t "${pkgdir}/usr/share/${pkgname}/" "${srcdir}/${_appname}/${_appname}"
-    install -Dm644 -t "${pkgdir}/usr/share/${pkgname}/libs" "${srcdir}/${_appname}"/libs/*
-    install -Dm644 -t "${pkgdir}/usr/share/applications/" "${pkgname}.desktop"
+    install -Dvm755 "${_distdir}"/*.jar      -t "${pkgdir}/usr/share/java/${pkgname}/"
+    install -Dvm644 "${_distdir}"/libs/*.jar -t "${pkgdir}/usr/share/java/${pkgname}/libs/"
 
-    install -dm755 "${pkgdir}/usr/bin"
-    ln -s "/usr/share/${pkgname}/${_appname}" "${pkgdir}/usr/bin/${pkgname}"
+    install -Dvm644 /dev/stdin "${pkgdir}/usr/share/applications/$pkgname.desktop" <<END
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=WePush
+GenericName=WePush
+Comment=WePush
+Exec=wepush
+Icon=wepush
+Terminal=false
+StartupNotify=true
+Categories=Network;Office;Utility;
+END
 
-	_iconpath="${srcdir}/${_appname}/${_appname}.png"
-	for _size in "192x192" "128x128" "96x96" "64x64" "48x48" "32x32" "24x24" "22x22" "20x20" "16x16" "8x8"; do
-    	install -dm755 "${pkgdir}/usr/share/icons/hicolor/${_size}/apps"
-    	convert "${_iconpath}" -resize "${_size}" "${pkgdir}/usr/share/icons/hicolor/${_size}/apps/${pkgname}.png"
-  	done
+    install -Dvm755 /dev/stdin "$pkgdir/usr/bin/$pkgname" <<END
+#!/bin/sh
+exec /usr/bin/java -jar '/usr/share/java/${pkgname}/${_appname}-${pkgver}-runnable.jar' "\$@"
+END
+
+    for i in 16 24 32 48 64 128 256 512 1024; do
+        install -Dvm644 "${_srcdir}"/src/main/resources/icon/logo-$i.png \
+            "$pkgdir/usr/share/icons/hicolor/${i}x${i}/apps/$pkgname.png"
+    done
 }

@@ -1,0 +1,74 @@
+From 81744e88df23e0fd0a12d4457a2176affa5a8cb5 Mon Sep 17 00:00:00 2001
+From: everyx <lunt.luo@gmail.com>
+Date: Tue, 19 Nov 2024 18:12:58 +0800
+Subject: [PATCH] fix: maven compiler with lombok
+
+---
+ pom.xml | 40 +++++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 13 deletions(-)
+
+diff --git a/pom.xml b/pom.xml
+index bd40237..b05eba0 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -455,6 +455,20 @@
+ 
+     <build>
+         <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-compiler-plugin</artifactId>
++                <version>3.13.0</version>
++                <configuration>
++                  <annotationProcessorPaths>
++                    <path>
++                      <groupId>org.projectlombok</groupId>     
++                      <artifactId>lombok</artifactId>
++                      <version>${lombok.version}</version>
++                    </path>
++                  </annotationProcessorPaths>
++                </configuration>
++              </plugin>
+ 
+             <plugin>
+                 <groupId>io.github.fvarrui</groupId>
+@@ -508,23 +522,23 @@
+ <!--                    <additionalModules>jdk.crypto.ec,jdk.charsets</additionalModules>-->
+ <!--                                            </configuration>-->
+ <!--                                        </execution>-->
+-                    <execution>
+-                        <id>bundling-for-mac</id>
+-                        <phase>package</phase>
+-                        <goals>
+-                            <goal>package</goal>
+-                        </goals>
+-                        <configuration>
+-                            <platform>mac</platform>
+-                            <createTarball>true</createTarball>
++                                                                                <execution>
++                                                                                    <id>bundling-for-mac</id>
++                                                                                    <phase>package</phase>
++                                                                                    <goals>
++                                                                                        <goal>package</goal>
++                                                                                    </goals>
++                                                                                    <configuration>
++                                                                                        <platform>mac</platform>
++                                                                                        <createTarball>true</createTarball>
+                             <macConfig>
+                                 <developerId>rememberber@163.com</developerId>
+                                 <macStartup>UNIVERSAL</macStartup>
+                             </macConfig>
+-                            <additionalModules>jdk.crypto.ec,jdk.charsets</additionalModules>
+-                            <customizedJre>false</customizedJre>
+-                        </configuration>
+-                    </execution>
++                                                                                        <additionalModules>jdk.crypto.ec,jdk.charsets</additionalModules>
++                                                                                        <customizedJre>false</customizedJre>
++                                                                                    </configuration>
++                                                                                </execution>
+                 </executions>
+             </plugin>
+ 
+-- 
+2.47.0
+
